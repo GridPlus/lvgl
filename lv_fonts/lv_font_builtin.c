@@ -158,6 +158,24 @@ void lv_font_builtin_init(void)
     lv_font_add(&lv_font_symbol_40, NULL);
 #endif
 #endif
+
+
+#if USE_LV_FONT_SYMBOL_20 != 0
+#if USE_LV_FONT_SANS_SERIF_20 != 0
+    lv_font_add(&lv_font_symbol_20, &sans_serif_20);
+#else
+    lv_font_add(&lv_font_symbol_20, NULL);
+#endif
+#endif
+
+#if USE_LV_FONT_SYMBOL_40 != 0
+#if USE_LV_FONT_SANS_SERIF_40 != 0
+    lv_font_add(&lv_font_symbol_40, &sans_serif_40);
+#else
+    lv_font_add(&lv_font_symbol_40, NULL);
+#endif
+#endif
+
 }
 
 /**********************
