@@ -158,6 +158,25 @@ void lv_font_builtin_init(void)
     lv_font_add(&lv_font_symbol_40, NULL);
 #endif
 #endif
+
+
+// GridPlus fonts and symbols
+#if USE_GP_FONT_SYMBOL_24 != 0
+#if USE_MONTSERRAT_24 != 0
+    lv_font_add(&gp_font_symbol_24, &montserrat_24);
+#else
+    lv_font_add(&gp_font_symbol_24, NULL);
+#endif
+#endif
+
+#if USE_GP_FONT_SYMBOL_40 != 0
+#if USE_MONTSERRAT_40 != 0
+    lv_font_add(&gp_font_symbol_40, &montserrat_40);
+#else
+    lv_font_add(&gp_font_symbol_40, NULL);
+#endif
+#endif
+
 }
 
 /**********************
