@@ -12,6 +12,8 @@
 #include "../lv_hal/lv_hal_disp.h"
 #include "../lv_misc/lv_font.h"
 #include "lv_draw.h"
+#define DEBUG_LEVEL DEBUG_LEVEL_MAX
+#include "gp_debug_console.h"
 
 /*********************
  *      DEFINES
@@ -158,12 +160,15 @@ void lv_rletter(const lv_point_t * pos_p, const lv_area_t * mask_p,
             pos_p->y + letter_h < mask_p->y1 || pos_p->y > mask_p->y2) return;
 
     lv_coord_t col, row;
+    uint8_t letter_px;
     uint8_t col_bit;
     uint8_t col_byte_cnt;
     uint8_t width_byte_scr = letter_w >> 3;      /*Width in bytes (on the screen finally) (e.g. w = 11 -> 2 bytes wide)*/
     if(letter_w & 0x7) width_byte_scr++;
     uint8_t width_byte_bpp = (letter_w * bpp) >> 3;    /*Letter width in byte. Real width in the font*/
     if((letter_w * bpp) & 0x7) width_byte_bpp++;
+
+
 
     /* Calculate the col/row start/end on the map*/
     lv_coord_t col_start = pos_p->x >= mask_p->x1 ? 0 : mask_p->x1 - pos_p->x;
@@ -174,19 +179,33 @@ void lv_rletter(const lv_point_t * pos_p, const lv_area_t * mask_p,
     /*Move on the map too*/
     map_p += (row_start * width_byte_bpp) + ((col_start * bpp) >> 3);
 
-    uint8_t letter_px;
+    /* Variables to track trimming of whitespace*/
+    uint8_t zeroRow[50] = {0};
+    uint8_t trimTop = 0;
+    uint8_t topTrimmed = 0;
+    uint8_t trimBottom = 0;
+
+    memset(zeroRow,1,sizeof(zeroRow));
+    trimTop = 0;
+    trimBottom = 0;
+    topTrimmed = 0;
+
+
     for(row = row_start; row < row_end; row ++) {
         col_byte_cnt = 0;
         col_bit = (col_start * bpp) % 8;
         mask = mask_init >> col_bit;
         for(col = col_start; col < col_end; col ++) {
             letter_px = (*map_p & mask) >> (8 - col_bit - bpp);
+           // DEBUG_PRINT_INFO("LetterPX: %d \n\r", letter_px);
             if(letter_px != 0) {
 #if LV_ENABLE_CHARACTER_BUFFER == 0
                 lv_rpx(pos_p->x + col, pos_p->y + row, mask_p, lv_color_mix(color, letter_bg_color, bpp == 8 ? letter_px : bpp_opa_table[letter_px]), LV_OPA_COVER);
+                zeroRow[row] = 0;
             }
 #else
                 letter_img[(col-col_start)*letter_h + (row-row_start)] = lv_color_mix(color, letter_bg_color, bpp == 8 ? letter_px : bpp_opa_table[letter_px]);
+                zeroRow[row] = 0;
             } else {
                 letter_img[(col-col_start)*letter_h + (row-row_start)] = letter_bg_color;
             }
@@ -205,9 +224,38 @@ void lv_rletter(const lv_point_t * pos_p, const lv_area_t * mask_p,
         map_p += (width_byte_bpp) - col_byte_cnt;
     }
 
+    for(uint8_t i=0; i<letter_h; i++){
+        if(zeroRow[i] == 1 && topTrimmed == 0) trimTop++;
+        if(zeroRow[i] == 0 && trimTop != 0 && i != 0) topTrimmed = 1;
+        if(zeroRow[i] == 1 && topTrimmed == 1) trimBottom++;
+    }
+
+    if (trimTop == letter_h){
+        trimTop = 0;
+        trimBottom = 0;
+    }
+    uint16_t k = 0;
+    lv_color_t delta;
+    for(col = col_start; col < col_end; col ++) {
+        for(row = (row_start+trimTop); row < row_end - trimBottom; row ++) {
+            //DEBUG_PRINT_INFO("Original = %d", letter_img[k]);
+            delta = letter_img[k];
+            letter_img[k] = letter_img[(col-col_start)*letter_h +row];
+            //DEBUG_PRINT_INFO(" Delta = %d %d\n\r", delta, letter_img[k]);
+            k++;
+        }
+    }
+
+    //DEBUG_PRINT_INFO("Assignment trimTop = %d trimBottom = %d\n\r", trimTop, trimBottom);
+    // row_start += trimTop;
+    // row_end -= trimBottom;
+    // letter_h = letter_h - trimTop - trimBottom;
+    
+
+    //letter_h -= trimBottom;
 #if LV_ENABLE_CHARACTER_BUFFER != 0
     /* Draw the character image on the screen */
-    lv_disp_map(pos_p->y, pos_p->x, pos_p->y + letter_h, pos_p->x + letter_w, letter_img);
+    lv_disp_map(pos_p->y + trimTop, pos_p->x, pos_p->y + trimTop + (letter_h - trimTop - trimBottom), pos_p->x + letter_w, trimTop, trimBottom, letter_img);
 #endif
 }
 
@@ -255,7 +303,7 @@ void lv_rmap(const lv_area_t * cords_p, const lv_area_t * mask_p,
     if(recolor_opa == LV_OPA_TRANSP && chroma_key == false) {
         lv_coord_t mask_w = lv_area_get_width(&masked_a) - 1;
         for(row = masked_a.y1; row <= masked_a.y2; row++) {
-            lv_disp_map(masked_a.x1, row, masked_a.x1 + mask_w, row, (lv_color_t *)map_p);
+            lv_disp_map(masked_a.x1, row, masked_a.x1 + mask_w, row, 0, 0, (lv_color_t *)map_p);
             map_p += map_width * sizeof(lv_color_t);               /*Next row on the map*/
         }
     } else {

@@ -176,7 +176,7 @@ void lv_disp_flush(int32_t x1, int32_t y1, int32_t x2, int32_t y2, lv_color_t * 
  * @param y2 bottom coordinate of the rectangle
  * @param color_map pointer to an array of colors
  */
-void lv_disp_map(int32_t x1, int32_t y1, int32_t x2, int32_t y2, const lv_color_t * color_map)
+void lv_disp_map(int32_t x1, int32_t y1, int32_t x2, int32_t y2, int32_t top, int32_t bottom, const lv_color_t * color_map)
 {
     if(active == NULL) return;
     if(active->driver.disp_map != NULL)  active->driver.disp_map(x1, y1, x2, y2, color_map);

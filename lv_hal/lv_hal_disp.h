@@ -129,7 +129,7 @@ void lv_disp_fill(int32_t x1, int32_t y1, int32_t x2, int32_t y2, lv_color_t col
  * @param y2 bottom coordinate of the rectangle
  * @param color_map pointer to an array of colors
  */
-void lv_disp_map(int32_t x1, int32_t y1, int32_t x2, int32_t y2, const lv_color_t * color_map);
+void lv_disp_map(int32_t x1, int32_t y1, int32_t x2, int32_t y2, int32_t top, int32_t bottom, const lv_color_t * color_map);
 
 #if USE_LV_GPU
 /**
