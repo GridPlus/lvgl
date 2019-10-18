@@ -219,12 +219,20 @@ void lv_rletter(const lv_point_t * pos_p, const lv_area_t * mask_p,
     // Count the amount of whitespace that is required.
     if (!isWhitespace) {
         for(uint8_t i=0; i<letter_h; i++){
-            if(zeroRow[i] == 1 ) trimTop++; else break;
+            if(zeroRow[i] == 1 ){
+                trimTop++; 
+            } else {
+                break;
+            } 
         
         }
 
         for(uint8_t i=0; i<letter_h; i++){
-            if(zeroRow[letter_h-1-i] == 1 ) trimBottom++; else break;
+            if(zeroRow[letter_h-1-i] == 1 ){
+                trimBottom++; 
+            } else {
+                break;  
+            } 
         
         }
     }
