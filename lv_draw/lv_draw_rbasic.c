@@ -158,6 +158,7 @@ void lv_rletter(const lv_point_t * pos_p, const lv_area_t * mask_p,
             pos_p->y + letter_h < mask_p->y1 || pos_p->y > mask_p->y2) return;
 
     lv_coord_t col, row;
+    uint8_t letter_px;
     uint8_t col_bit;
     uint8_t col_byte_cnt;
     uint8_t width_byte_scr = letter_w >> 3;      /*Width in bytes (on the screen finally) (e.g. w = 11 -> 2 bytes wide)*/
@@ -174,7 +175,13 @@ void lv_rletter(const lv_point_t * pos_p, const lv_area_t * mask_p,
     /*Move on the map too*/
     map_p += (row_start * width_byte_bpp) + ((col_start * bpp) >> 3);
 
-    uint8_t letter_px;
+    /* Variables to track trimming of whitespace*/
+    uint8_t zeroRow[LV_CHARACTER_MAX_PIX_HEIGHT] = {0};
+    uint8_t trimTop = 0;
+    uint8_t trimBottom = 0;
+    bool isWhitespace = true;
+    memset(zeroRow,1,sizeof(zeroRow));
+
     for(row = row_start; row < row_end; row ++) {
         col_byte_cnt = 0;
         col_bit = (col_start * bpp) % 8;
@@ -184,9 +191,13 @@ void lv_rletter(const lv_point_t * pos_p, const lv_area_t * mask_p,
             if(letter_px != 0) {
 #if LV_ENABLE_CHARACTER_BUFFER == 0
                 lv_rpx(pos_p->x + col, pos_p->y + row, mask_p, lv_color_mix(color, letter_bg_color, bpp == 8 ? letter_px : bpp_opa_table[letter_px]), LV_OPA_COVER);
+                zeroRow[row] = 0;
+                isWhitespace = false;
             }
 #else
                 letter_img[(col-col_start)*letter_h + (row-row_start)] = lv_color_mix(color, letter_bg_color, bpp == 8 ? letter_px : bpp_opa_table[letter_px]);
+                zeroRow[row] = 0;
+                isWhitespace = false;
             } else {
                 letter_img[(col-col_start)*letter_h + (row-row_start)] = letter_bg_color;
             }
@@ -205,9 +216,39 @@ void lv_rletter(const lv_point_t * pos_p, const lv_area_t * mask_p,
         map_p += (width_byte_bpp) - col_byte_cnt;
     }
 
+    // Count the amount of whitespace that is required.
+    if (!isWhitespace) {
+        for(uint8_t i=0; i<letter_h; i++){
+            if(zeroRow[i] == 1 ){
+                trimTop++; 
+            } else {
+                break;
+            } 
+        
+        }
+
+        for(uint8_t i=0; i<letter_h; i++){
+            if(zeroRow[letter_h-1-i] == 1 ){
+                trimBottom++; 
+            } else {
+                break;  
+            } 
+        
+        }
+    }
+
+    // Reindex the image map without the whitespace
+    uint16_t k = 0;
+    for(col = col_start; col < col_end; col ++) {
+        for(row = (row_start+trimTop); row < row_end - trimBottom; row ++) {
+            letter_img[k] = letter_img[(col-col_start)*letter_h +row];
+            k++;
+        }
+    }
+
 #if LV_ENABLE_CHARACTER_BUFFER != 0
     /* Draw the character image on the screen */
-    lv_disp_map(pos_p->y, pos_p->x, pos_p->y + letter_h, pos_p->x + letter_w, letter_img);
+    lv_disp_map(pos_p->y + trimTop, pos_p->x, pos_p->y + trimTop + (letter_h - trimTop - trimBottom), pos_p->x + letter_w,letter_img);
 #endif
 }
 
