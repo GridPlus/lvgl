@@ -9,7 +9,7 @@ extern "C" {
 #else
 #include "../../lv_conf.h"
 #endif
-
+#include "gp_symbols.h"
 /*
  * With no UTF-8 support (192- 255) (192..241 is used)
  *
@@ -80,8 +80,8 @@ extern "C" {
 #define SYMBOL_AUDIO           _SYMBOL_VALUE3(EF,A0,80)
 #define SYMBOL_VIDEO           _SYMBOL_VALUE3(EF,A0,81)
 #define SYMBOL_LIST            _SYMBOL_VALUE3(EF,A0,82)
-#define SYMBOL_OK              _SYMBOL_VALUE3(EF,A0,83)
-#define SYMBOL_CLOSE           _SYMBOL_VALUE3(EF,A0,84)
+#define SYMBOL_OK              GP_SYMBOL_OK
+#define SYMBOL_CLOSE           GP_SYMBOL_CLOSE
 #define SYMBOL_POWER           _SYMBOL_VALUE3(EF,A0,85)
 #define SYMBOL_SETTINGS        _SYMBOL_VALUE3(EF,A0,86)
 #define SYMBOL_TRASH           _SYMBOL_VALUE3(EF,A0,87)
@@ -100,8 +100,8 @@ extern "C" {
 #define SYMBOL_STOP            _SYMBOL_VALUE3(EF,A0,94)
 #define SYMBOL_NEXT            _SYMBOL_VALUE3(EF,A0,95)
 #define SYMBOL_EJECT           _SYMBOL_VALUE3(EF,A0,96)
-#define SYMBOL_LEFT            _SYMBOL_VALUE3(EF,A0,97)
-#define SYMBOL_RIGHT           _SYMBOL_VALUE3(EF,A0,98)
+#define SYMBOL_LEFT            GP_SYMBOL_BACK
+#define SYMBOL_RIGHT           GP_SYMBOL_FORWARD
 #define SYMBOL_PLUS            _SYMBOL_VALUE3(EF,A0,99)
 #define SYMBOL_MINUS           _SYMBOL_VALUE3(EF,A0,9A)
 #define SYMBOL_WARNING         _SYMBOL_VALUE3(EF,A0,9B)
