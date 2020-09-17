@@ -319,10 +319,10 @@ void lv_rmap(const lv_area_t * cords_p, const lv_area_t * mask_p,
 
             }
             map_p += map_width * sizeof(lv_color_t);               /*Next row on the map*/
-            toc = DWT->CYCCNT;
-            time = toc-tic;
-            DEBUG_PRINT_INFO("Draw time lv_rpx in lv_rmap(): %d\n", time);
         }
+        toc = DWT->CYCCNT;
+        time = toc-tic;
+        DEBUG_PRINT_INFO("Draw time lv_rpx in lv_rmap(): %d\n", time);
     }
 }
 
