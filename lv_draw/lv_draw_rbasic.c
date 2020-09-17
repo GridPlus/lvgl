@@ -12,6 +12,8 @@
 #include "../lv_hal/lv_hal_disp.h"
 #include "../lv_misc/lv_font.h"
 #include "lv_draw.h"
+#include "fsl_device_registers.h"
+#include "gp_debug_console.h"
 
 /*********************
  *      DEFINES
@@ -276,6 +278,7 @@ void lv_rmap(const lv_area_t * cords_p, const lv_area_t * mask_p,
              const uint8_t * map_p, lv_opa_t opa, bool chroma_key, bool alpha_byte,
              lv_color_t recolor, lv_opa_t recolor_opa)
 {
+    volatile uint32_t tic, toc, time = 0;
     if(alpha_byte) return;      /*Pixel level opacity i not supported in real map drawing*/
 
     (void)opa;              /*opa is used only for compatibility with lv_vmap*/
@@ -300,17 +303,15 @@ void lv_rmap(const lv_area_t * cords_p, const lv_area_t * mask_p,
             map_p += map_width * sizeof(lv_color_t);               /*Next row on the map*/
         }
     } else {
+        tic = DWT->CYCCNT;
         lv_color_t chroma_key_color = LV_COLOR_TRANSP;
         lv_coord_t col;
         for(row = masked_a.y1; row <= masked_a.y2; row++) {
             for(col = masked_a.x1; col <= masked_a.x2; col++) {
                 lv_color_t * px_color = (lv_color_t *) &map_p[(uint32_t)(col - masked_a.x1) * sizeof(lv_color_t)];
-
                 if(chroma_key && chroma_key_color.full == px_color->full) continue;
-
                 if(recolor_opa != LV_OPA_TRANSP) {
                     lv_color_t recolored_px = lv_color_mix(recolor, *px_color, recolor_opa);
-
                     lv_rpx(col, row, mask_p, recolored_px, LV_OPA_COVER);
                 } else {
                     lv_rpx(col, row, mask_p, *px_color, LV_OPA_COVER);
@@ -318,6 +319,9 @@ void lv_rmap(const lv_area_t * cords_p, const lv_area_t * mask_p,
 
             }
             map_p += map_width * sizeof(lv_color_t);               /*Next row on the map*/
+            toc = DWT->CYCCNT;
+            time = toc-tic;
+            DEBUG_PRINT_INFO("Draw time lv_rpx in lv_rmap(): %d\n", time);
         }
     }
 }
