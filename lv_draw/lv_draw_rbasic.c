@@ -278,7 +278,7 @@ void lv_rmap(const lv_area_t * cords_p, const lv_area_t * mask_p,
              const uint8_t * map_p, lv_opa_t opa, bool chroma_key, bool alpha_byte,
              lv_color_t recolor, lv_opa_t recolor_opa)
 {
-    volatile uint32_t tic, toc, time = 0;
+    //volatile uint32_t tic, toc, time = 0;
     if(alpha_byte) return;      /*Pixel level opacity i not supported in real map drawing*/
 
     (void)opa;              /*opa is used only for compatibility with lv_vmap*/
@@ -303,7 +303,6 @@ void lv_rmap(const lv_area_t * cords_p, const lv_area_t * mask_p,
             map_p += map_width * sizeof(lv_color_t);               /*Next row on the map*/
         }
     } else {
-        tic = DWT->CYCCNT;
         lv_color_t chroma_key_color = LV_COLOR_TRANSP;
         lv_coord_t col;
         for(row = masked_a.y1; row <= masked_a.y2; row++) {
@@ -319,9 +318,6 @@ void lv_rmap(const lv_area_t * cords_p, const lv_area_t * mask_p,
 
             }
             map_p += map_width * sizeof(lv_color_t);               /*Next row on the map*/
-            toc = DWT->CYCCNT;
-            time = toc-tic;
-            DEBUG_PRINT_INFO("Draw time lv_rpx in lv_rmap(): %d\n", time);
         }
     }
 }

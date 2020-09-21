@@ -331,6 +331,7 @@ static lv_res_t lv_img_draw_core(const lv_area_t * coords, const lv_area_t * mas
     else {
         lv_coord_t width = lv_area_get_width(&mask_com);
         uint8_t buf[width * ((LV_COLOR_DEPTH >> 3) + 1)];
+        uint8_t *buf2 = buf;
         // uint8_t buf[LV_HOR_RES * ((LV_COLOR_DEPTH >> 3) + 1)];  /*+1 because of the possible alpha byte*/
         lv_area_t line;
         lv_area_copy(&line, &mask_com);
@@ -347,6 +348,8 @@ static lv_res_t lv_img_draw_core(const lv_area_t * coords, const lv_area_t * mas
                 return LV_RES_INV;
             }
             map_fp(&line, mask, buf, opa, chroma_keyed, alpha_byte, style->image.color, style->image.intense);
+            //lv_disp_map(line.x1, line.y1, line.x2, line.y2, (lv_color_t *) buf2); 
+            //buf2 += width * sizeof(lv_color_t);
             //lv_disp_map(mask_com.x1, row, mask_com.x1 + width, row, 
             line.y1++;
             line.y2++;
