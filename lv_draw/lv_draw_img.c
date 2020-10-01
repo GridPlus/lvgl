@@ -9,7 +9,6 @@
 #include "lv_draw_img.h"
 #include "../lv_misc/lv_fs.h"
 #include "fsl_device_registers.h"
-#include "gp_debug_console.h"
 
 /*********************
  *      DEFINES
@@ -70,7 +69,6 @@ static lv_img_decoder_close_f_t lv_img_decoder_close_custom;
 void lv_draw_img(const lv_area_t * coords, const lv_area_t * mask,
                  const void * src, const lv_style_t * style, lv_opa_t opa_scale)
 {
-    volatile uint32_t tic, toc, time = 0;
     if(src == NULL) {
         LV_LOG_WARN("Image draw: src is NULL");
         lv_draw_rect(coords, mask, &lv_style_plain, LV_OPA_COVER);
@@ -78,12 +76,8 @@ void lv_draw_img(const lv_area_t * coords, const lv_area_t * mask,
         return;
     }
 
-    tic = DWT->CYCCNT;
     lv_res_t res;
     res = lv_img_draw_core(coords, mask, src, style, opa_scale);
-    toc = DWT->CYCCNT;
-    time = toc - tic;
-    DEBUG_PRINT_INFO("Draw Time: %d\n", time);
 
     if(res ==  LV_RES_INV) {
         LV_LOG_WARN("Image draw error");
@@ -291,9 +285,8 @@ void lv_img_decoder_set_custom(lv_img_decoder_info_f_t  info_fp, lv_img_decoder_
 static lv_res_t lv_img_draw_core(const lv_area_t * coords, const lv_area_t * mask,
                                  const void * src, const lv_style_t * style, lv_opa_t opa_scale)
 {
-
+    volatile uint32_t tic, toc, ttime = 0;
     lv_area_t mask_com;    /*Common area of mask and coords*/
-    volatile uint32_t tic, toc, time = 0;
     bool union_ok;
     union_ok = lv_area_intersect(&mask_com, mask, coords);
     if(union_ok == false) {
@@ -314,14 +307,13 @@ static lv_res_t lv_img_draw_core(const lv_area_t * coords, const lv_area_t * mas
     bool chroma_keyed = lv_img_color_format_is_chroma_keyed(header.cf);
     bool alpha_byte = lv_img_color_format_has_alpha(header.cf);
 
-    tic = DWT->CYCCNT;
     const uint8_t * img_data = lv_img_decoder_open(src, style);
     if(img_data == LV_IMG_DECODER_OPEN_FAIL) {
         LV_LOG_WARN("Image draw cannot open the image resource");
         lv_img_decoder_close();
         return LV_RES_INV;
     }
-
+    tic = DWT->CYCCNT;
     /* The decoder open could open the image and gave the entire uncompressed image.
      * Just draw it!*/
     if(img_data) {
@@ -330,8 +322,12 @@ static lv_res_t lv_img_draw_core(const lv_area_t * coords, const lv_area_t * mas
     /* The whole uncompressed image is not available. Try to read it line-by-line*/
     else {
         lv_coord_t width = lv_area_get_width(&mask_com);
-        uint8_t buf[width * ((LV_COLOR_DEPTH >> 3) + 1)];
-        // uint8_t buf[LV_HOR_RES * ((LV_COLOR_DEPTH >> 3) + 1)];  /*+1 because of the possible alpha byte*/
+
+#if LV_COMPILER_VLA_SUPPORTED
+        uint8_t buf[(lv_area_get_width(&mask_com) * ((LV_COLOR_DEPTH >> 3) + 1))];
+#else
+        uint8_t buf[LV_HOR_RES * ((LV_COLOR_DEPTH >> 3) + 1)];  /*+1 because of the possible alpha byte*/
+#endif
         lv_area_t line;
         lv_area_copy(&line, &mask_com);
         lv_area_set_height(&line, 1);
@@ -347,16 +343,15 @@ static lv_res_t lv_img_draw_core(const lv_area_t * coords, const lv_area_t * mas
                 return LV_RES_INV;
             }
             map_fp(&line, mask, buf, opa, chroma_keyed, alpha_byte, style->image.color, style->image.intense);
-            //lv_disp_map(mask_com.x1, row, mask_com.x1 + width, row, 
             line.y1++;
             line.y2++;
             y++;
         }
     }
-    lv_img_decoder_close();
     toc = DWT->CYCCNT;
-    time = toc-tic;
-    DEBUG_PRINT_INFO("Draw time image open close: %d\n", time);
+    ttime = toc - tic;
+    ttime++;
+    lv_img_decoder_close();
 
     return LV_RES_OK;
 }

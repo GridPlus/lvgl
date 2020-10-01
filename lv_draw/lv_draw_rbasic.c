@@ -12,8 +12,6 @@
 #include "../lv_hal/lv_hal_disp.h"
 #include "../lv_misc/lv_font.h"
 #include "lv_draw.h"
-#include "fsl_device_registers.h"
-#include "gp_debug_console.h"
 
 /*********************
  *      DEFINES
@@ -191,19 +189,12 @@ void lv_rletter(const lv_point_t * pos_p, const lv_area_t * mask_p,
         for(col = col_start; col < col_end; col ++) {
             letter_px = (*map_p & mask) >> (8 - col_bit - bpp);
             if(letter_px != 0) {
-#if LV_ENABLE_CHARACTER_BUFFER == 0
-                lv_rpx(pos_p->x + col, pos_p->y + row, mask_p, lv_color_mix(color, letter_bg_color, bpp == 8 ? letter_px : bpp_opa_table[letter_px]), LV_OPA_COVER);
-                zeroRow[row] = 0;
-                isWhitespace = false;
-            }
-#else
                 letter_img[(col-col_start)*letter_h + (row-row_start)] = lv_color_mix(color, letter_bg_color, bpp == 8 ? letter_px : bpp_opa_table[letter_px]);
                 zeroRow[row] = 0;
                 isWhitespace = false;
             } else {
                 letter_img[(col-col_start)*letter_h + (row-row_start)] = letter_bg_color;
             }
-#endif
             if(col_bit < 8 - bpp) {
                 col_bit += bpp;
                 mask = mask >> bpp;
@@ -214,10 +205,8 @@ void lv_rletter(const lv_point_t * pos_p, const lv_area_t * mask_p,
                 map_p ++;
             }
         }
-
         map_p += (width_byte_bpp) - col_byte_cnt;
     }
-
     // Count the amount of whitespace that is required.
     if (!isWhitespace) {
         for(uint8_t i=0; i<letter_h; i++){
@@ -226,7 +215,6 @@ void lv_rletter(const lv_point_t * pos_p, const lv_area_t * mask_p,
             } else {
                 break;
             } 
-        
         }
 
         for(uint8_t i=0; i<letter_h; i++){
@@ -235,10 +223,8 @@ void lv_rletter(const lv_point_t * pos_p, const lv_area_t * mask_p,
             } else {
                 break;  
             } 
-        
         }
     }
-
     // Reindex the image map without the whitespace
     uint16_t k = 0;
     for(col = col_start; col < col_end; col ++) {
@@ -247,21 +233,10 @@ void lv_rletter(const lv_point_t * pos_p, const lv_area_t * mask_p,
             k++;
         }
     }
-
-#if LV_ENABLE_CHARACTER_BUFFER != 0
     /* Draw the character image on the screen */
     lv_disp_map(pos_p->y + trimTop, pos_p->x, pos_p->y + trimTop + (letter_h - trimTop - trimBottom), pos_p->x + letter_w,letter_img);
-#endif
 }
 
-/**
- * When the letter is ant-aliased it needs to know the background color
- * @param bg_color the background color of the currently drawn letter
- */
-void lv_rletter_set_background(lv_color_t color)
-{
-    letter_bg_color = color;
-}
 
 /**
  * Draw a color map to the display (image)
@@ -278,8 +253,9 @@ void lv_rmap(const lv_area_t * cords_p, const lv_area_t * mask_p,
              const uint8_t * map_p, lv_opa_t opa, bool chroma_key, bool alpha_byte,
              lv_color_t recolor, lv_opa_t recolor_opa)
 {
-    volatile uint32_t tic, toc, time = 0;
     if(alpha_byte) return;      /*Pixel level opacity i not supported in real map drawing*/
+
+    lv_color_t img_buffer[LV_CHARACTER_MAX_PIX_HEIGHT * LV_CHARACTER_MAX_PIX_WIDTH] = {0};
 
     (void)opa;              /*opa is used only for compatibility with lv_vmap*/
     lv_area_t masked_a;
@@ -303,27 +279,34 @@ void lv_rmap(const lv_area_t * cords_p, const lv_area_t * mask_p,
             map_p += map_width * sizeof(lv_color_t);               /*Next row on the map*/
         }
     } else {
-        tic = DWT->CYCCNT;
         lv_color_t chroma_key_color = LV_COLOR_TRANSP;
         lv_coord_t col;
         for(row = masked_a.y1; row <= masked_a.y2; row++) {
             for(col = masked_a.x1; col <= masked_a.x2; col++) {
-                lv_color_t * px_color = (lv_color_t *) &map_p[(uint32_t)(col - masked_a.x1) * sizeof(lv_color_t)];
+                lv_color_t *px_color = (lv_color_t *) &map_p[(uint32_t)(col - masked_a.x1) * sizeof(lv_color_t)];
                 if(chroma_key && chroma_key_color.full == px_color->full) continue;
                 if(recolor_opa != LV_OPA_TRANSP) {
                     lv_color_t recolored_px = lv_color_mix(recolor, *px_color, recolor_opa);
                     lv_rpx(col, row, mask_p, recolored_px, LV_OPA_COVER);
                 } else {
-                    lv_rpx(col, row, mask_p, *px_color, LV_OPA_COVER);
+                    //lv_rpx(col, row, mask_p, *px_color, LV_OPA_COVER);
+                    img_buffer[(col-masked_a.x1) + (row-masked_a.y1)] = *px_color;
                 }
 
             }
             map_p += map_width * sizeof(lv_color_t);               /*Next row on the map*/
         }
-        toc = DWT->CYCCNT;
-        time = toc-tic;
-        DEBUG_PRINT_INFO("Draw time lv_rpx in lv_rmap(): %d\n", time);
     }
+    lv_disp_map(cords_p->x1, cords_p->y1, cords_p->x1 + masked_a.x1, cords_p->y1 + masked_a.y1, img_buffer);
+}
+
+/**
+ * When the letter is ant-aliased it needs to know the background color
+ * @param bg_color the background color of the currently drawn letter
+ */
+void lv_rletter_set_background(lv_color_t color)
+{
+    letter_bg_color = color;
 }
 
 /**********************
