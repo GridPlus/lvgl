@@ -319,9 +319,9 @@ void lv_rmap(const lv_area_t * cords_p, const lv_area_t * mask_p,
 
             }
             map_p += map_width * sizeof(lv_color_t);               /*Next row on the map*/
+            lv_disp_map(cords_p->x1, cords_p->y1, cords_p->x1 + masked_a.x1, cords_p->y1 + masked_a.y1, img_buffer);
         }
     }
-    lv_disp_map(cords_p->x1, cords_p->y1, cords_p->x1 + masked_a.x1, cords_p->y1 + masked_a.y1, img_buffer);
 }
 
 /**********************
