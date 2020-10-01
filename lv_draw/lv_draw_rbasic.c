@@ -253,7 +253,6 @@ void lv_rmap(const lv_area_t * cords_p, const lv_area_t * mask_p,
              const uint8_t * map_p, lv_opa_t opa, bool chroma_key, bool alpha_byte,
              lv_color_t recolor, lv_opa_t recolor_opa)
 {
-    //volatile uint32_t tic, toc, time = 0;
     if(alpha_byte) return;      /*Pixel level opacity i not supported in real map drawing*/
 
     lv_color_t img_buffer[LV_CHARACTER_MAX_PIX_HEIGHT * LV_CHARACTER_MAX_PIX_WIDTH] = {0};
