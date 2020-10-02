@@ -281,7 +281,8 @@ void lv_rmap(const lv_area_t * cords_p, const lv_area_t * mask_p,
     (void)opa;              /*opa is used only for compatibility with lv_vmap*/
     lv_area_t masked_a;
     bool union_ok;
-    lv_color_t img_buffer[LV_CHARACTER_MAX_PIX_HEIGHT * LV_CHARACTER_MAX_PIX_WIDTH] = {0};
+    uint32_t img_buffer_size = LV_CHARACTER_MAX_PIX_HEIGHT * LV_CHARACTER_MAX_PIX_WIDTH;
+    lv_color_t img_buffer[LV_CHARACTER_MAX_PIX_HEIGHT*LV_CHARACTER_MAX_PIX_WIDTH] = {0};
 
     union_ok = lv_area_intersect(&masked_a, cords_p, mask_p);
 
@@ -302,7 +303,7 @@ void lv_rmap(const lv_area_t * cords_p, const lv_area_t * mask_p,
         }
     } else {
         lv_color_t chroma_key_color = LV_COLOR_TRANSP;
-        lv_coord_t col;
+        lv_coord_t col, col_offset = 0;
         for(row = masked_a.y1; row <= masked_a.y2; row++) {
             for(col = masked_a.x1; col <= masked_a.x2; col++) {
                 lv_color_t * px_color = (lv_color_t *) &map_p[(uint32_t)(col - masked_a.x1) * sizeof(lv_color_t)];
@@ -314,12 +315,16 @@ void lv_rmap(const lv_area_t * cords_p, const lv_area_t * mask_p,
 
                     lv_rpx(col, row, mask_p, recolored_px, LV_OPA_COVER);
                 } else {
-                    img_buffer[col-masked_a.x1] = *px_color;
+                    if((col-masked_a.x1) > img_buffer_size)  {
+                        lv_disp_map(masked_a.x1, masked_a.y1, masked_a.x1 + col, masked_a.y2, img_buffer);
+                        col_offset += img_buffer_size - 1;
+                    } else {
+                        img_buffer[col - masked_a.x1 - col_offset] = *px_color;
+                    }
                 }
 
             }
             map_p += map_width * sizeof(lv_color_t);               /*Next row on the map*/
-            lv_disp_map(cords_p->x1, cords_p->y1, cords_p->x1 + col, cords_p->y1 + masked_a.y1, img_buffer);
         }
     }
 }
