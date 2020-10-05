@@ -313,6 +313,7 @@ void lv_rmap(const lv_area_t * cords_p, const lv_area_t * mask_p,
                     lv_rpx(col, row, mask_p, recolored_px, LV_OPA_COVER);
                 } else {
                     img_buffer[col - masked_a.x1] = *px_color;
+                    //lv_rpx(col, row, mask_p, *px_color, LV_OPA_COVER);
                 }
             }
             lv_disp_map(masked_a.x1, row, masked_a.x2, row, img_buffer);
