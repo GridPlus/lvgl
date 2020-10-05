@@ -7,6 +7,7 @@
  *      INCLUDES
  *********************/
 #include "lv_draw_img.h"
+#include "lv_hal_disp.h"
 #include "../lv_misc/lv_fs.h"
 #include "fsl_device_registers.h"
 
@@ -343,6 +344,7 @@ static lv_res_t lv_img_draw_core(const lv_area_t * coords, const lv_area_t * mas
                 return LV_RES_INV;
             }
             map_fp(&line, mask, buf, opa, chroma_keyed, alpha_byte, style->image.color, style->image.intense);
+            //lv_disp_map(mask_com.x1, row, mask_com.x1 + 100, row, (lv_color_t *)buf);
             line.y1++;
             line.y2++;
             y++;
