@@ -305,18 +305,13 @@ void lv_rmap(const lv_area_t * cords_p, const lv_area_t * mask_p,
         for(row = masked_a.y1; row <= masked_a.y2; row++) {
             for(col = masked_a.x1; col <= masked_a.x2; col++) {
                 lv_color_t * px_color = (lv_color_t *) &map_p[(uint32_t)(col - masked_a.x1) * sizeof(lv_color_t)];
-
                 if(chroma_key && chroma_key_color.full == px_color->full) continue;
-
                 if(recolor_opa != LV_OPA_TRANSP) {
                     lv_color_t recolored_px = lv_color_mix(recolor, *px_color, recolor_opa);
-
                     lv_rpx(col, row, mask_p, recolored_px, LV_OPA_COVER);
-                } else {
-                    lv_rpx(col, row, mask_p, *px_color, LV_OPA_COVER);
                 }
-
             }
+            lv_disp_map(row, masked_a.x1, row+1, masked_a.x2, (lv_color_t *)map_p);
             map_p += map_width * sizeof(lv_color_t);               /*Next row on the map*/
         }
     }
