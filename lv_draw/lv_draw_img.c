@@ -7,9 +7,7 @@
  *      INCLUDES
  *********************/
 #include "lv_draw_img.h"
-#include "lv_hal_disp.h"
 #include "../lv_misc/lv_fs.h"
-#include "fsl_device_registers.h"
 
 /*********************
  *      DEFINES
@@ -286,7 +284,7 @@ void lv_img_decoder_set_custom(lv_img_decoder_info_f_t  info_fp, lv_img_decoder_
 static lv_res_t lv_img_draw_core(const lv_area_t * coords, const lv_area_t * mask,
                                  const void * src, const lv_style_t * style, lv_opa_t opa_scale)
 {
-    volatile uint32_t tic, toc, ttime = 0;
+
     lv_area_t mask_com;    /*Common area of mask and coords*/
     bool union_ok;
     union_ok = lv_area_intersect(&mask_com, mask, coords);
@@ -314,7 +312,7 @@ static lv_res_t lv_img_draw_core(const lv_area_t * coords, const lv_area_t * mas
         lv_img_decoder_close();
         return LV_RES_INV;
     }
-    tic = DWT->CYCCNT;
+
     /* The decoder open could open the image and gave the entire uncompressed image.
      * Just draw it!*/
     if(img_data) {
@@ -344,15 +342,12 @@ static lv_res_t lv_img_draw_core(const lv_area_t * coords, const lv_area_t * mas
                 return LV_RES_INV;
             }
             map_fp(&line, mask, buf, opa, chroma_keyed, alpha_byte, style->image.color, style->image.intense);
-            //lv_disp_map(mask_com.x1, row, mask_com.x1 + 100, row, (lv_color_t *)buf);
             line.y1++;
             line.y2++;
             y++;
         }
     }
-    toc = DWT->CYCCNT;
-    ttime = toc - tic;
-    ttime++;
+
     lv_img_decoder_close();
 
     return LV_RES_OK;
