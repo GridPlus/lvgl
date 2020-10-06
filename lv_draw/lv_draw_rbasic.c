@@ -313,7 +313,8 @@ void lv_rmap(const lv_area_t * cords_p, const lv_area_t * mask_p,
                     //lv_rpx(col, row, mask_p, *px_color, LV_OPA_COVER);
                 }
             }
-            lv_disp_map(masked_a.x1, row, masked_a.x2, row + 1, (lv_color_t *)map_p);
+            //lv_disp_map(masked_a.x1, row, masked_a.x2, row + 1, (lv_color_t *)map_p);
+            lv_disp_map(row, masked_a.x1, row+1, masked_a.x2, (lv_color_t *)map_p);
             map_p += map_width * sizeof(lv_color_t);               /*Next row on the map*/
         }
     }
