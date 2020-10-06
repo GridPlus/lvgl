@@ -278,13 +278,13 @@ void lv_rmap(const lv_area_t * cords_p, const lv_area_t * mask_p,
 {
     if(alpha_byte) return;      /*Pixel level opacity i not supported in real map drawing*/
     (void)opa;              /*opa is used only for compatibility with lv_vmap*/
-    lv_area_t masked_a;
+    lv_area_t masked_a = {0};
     bool union_ok = lv_area_intersect(&masked_a, cords_p, mask_p);
 
     /*If there are common part of the mask and map then draw the map*/
     if(union_ok == false) return;
 
-    lv_color_t img_buffer[masked_a.x2 - masked_a.x1];
+    lv_color_t img_buffer[masked_a.x2 - masked_a.x1 + 1];
 
     /*Go to the first pixel*/
     lv_coord_t map_width = lv_area_get_width(cords_p);
@@ -292,7 +292,7 @@ void lv_rmap(const lv_area_t * cords_p, const lv_area_t * mask_p,
     map_p += (masked_a.y1 - cords_p->y1) * map_width * sizeof(lv_color_t);
     map_p += (masked_a.x1 - cords_p->x1) * sizeof(lv_color_t);
 
-    lv_coord_t row;
+    volatile lv_coord_t row = 0;
     if(recolor_opa == LV_OPA_TRANSP && chroma_key == false) {
         for(row = masked_a.y1; row <= masked_a.y2; row++) {
             lv_disp_map(masked_a.x1, row, masked_a.x1 + mask_w, row, (lv_color_t *)map_p);
@@ -313,9 +313,10 @@ void lv_rmap(const lv_area_t * cords_p, const lv_area_t * mask_p,
                     lv_rpx(col, row, mask_p, recolored_px, LV_OPA_COVER);
                 } else {
                     img_buffer[col - masked_a.x1] = *px_color;
+                    //lv_rpx(col, row, mask_p, *px_color, LV_OPA_COVER);
                 }
             }
-            lv_disp_map(masked_a.x1, row, masked_a.x2, row, img_buffer);
+            lv_disp_map(masked_a.x1, row, masked_a.x2, row + 1, (lv_color_t *)map_p);
             map_p += map_width * sizeof(lv_color_t);               /*Next row on the map*/
         }
     }
