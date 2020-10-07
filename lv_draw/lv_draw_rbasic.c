@@ -302,16 +302,19 @@ void lv_rmap(const lv_area_t * cords_p, const lv_area_t * mask_p,
     } else {
         lv_color_t chroma_key_color = LV_COLOR_TRANSP;
         lv_coord_t col;
+        lv_color_t img_buffer[masked_a.x2 - masked_a.x1];
         for(row = masked_a.y1; row <= masked_a.y2; row++) {
             for(col = masked_a.x1; col <= masked_a.x2; col++) {
                 lv_color_t * px_color = (lv_color_t *) &map_p[(uint32_t)(col - masked_a.x1) * sizeof(lv_color_t)];
                 if(chroma_key && chroma_key_color.full == px_color->full) continue;
                 if(recolor_opa != LV_OPA_TRANSP) {
                     lv_color_t recolored_px = lv_color_mix(recolor, *px_color, recolor_opa);
-                    lv_rpx(col, row, mask_p, recolored_px, LV_OPA_COVER);
+                    img_buffer[col - masked_a.x1] = recolored_px;
+                } else {
+                    img_buffer[col - masked_a.x1] = *px_color;
                 }
             }
-            lv_disp_map(row, masked_a.x1, row+1, masked_a.x2, (lv_color_t *)map_p);
+            lv_disp_map(row, masked_a.x1, row+1, masked_a.x2, img_buffer);
             map_p += map_width * sizeof(lv_color_t);               /*Next row on the map*/
         }
     }
