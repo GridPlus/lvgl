@@ -224,15 +224,15 @@
  * 
  * This will allocate a static buffer to store HEIGHT x WIDTH
  * number of pixels.*/
-#define LV_ENABLE_CHARACTER_BUFFER 1
-#if LV_ENABLE_CHARACTER_BUFFER != 0
+#define LV_ENABLE_PIXEL_BUFFER 1
+#if LV_ENABLE_PIXEL_BUFFER != 0
 // Set this to the maximum height x width of any character in your fonts
 #define LV_CHARACTER_MAX_PIX_HEIGHT 40
 #define LV_CHARACTER_MAX_PIX_WIDTH 40
 #if (LV_CHARACTER_MAX_PIX_HEIGHT <= 0) || (LV_CHARACTER_MAX_PIX_WIDTH <= 0)
 #error "Character buffer dimensions must be positive."
 #endif
-#endif /* LV_ENABLE_CHARACTER_BUFFER */
+#endif /* LV_ENABLE_PIXEL_BUFFER */
 
 /*===================
  *  LV_OBJ SETTINGS

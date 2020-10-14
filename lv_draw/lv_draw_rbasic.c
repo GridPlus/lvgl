@@ -29,7 +29,7 @@
  *  STATIC VARIABLES
  **********************/
 static lv_color_t letter_bg_color;
-#if LV_ENABLE_CHARACTER_BUFFER != 0
+#if LV_ENABLE_PIXEL_BUFFER != 0
     static lv_color_t pixel_buffer[LV_CHARACTER_MAX_PIX_HEIGHT * LV_CHARACTER_MAX_PIX_WIDTH];
 #endif
 /**********************
@@ -122,7 +122,7 @@ void lv_rletter(const lv_point_t * pos_p, const lv_area_t * mask_p,
     uint8_t mask_init;
     uint8_t mask;
 
-#if LV_ENABLE_CHARACTER_BUFFER != 0
+#if LV_ENABLE_PIXEL_BUFFER != 0
 
     // Make sure letter dimensions don't exceed the size of our character buffer
     letter_h = (letter_h > LV_CHARACTER_MAX_PIX_HEIGHT) ? LV_CHARACTER_MAX_PIX_HEIGHT : letter_h;
@@ -190,7 +190,7 @@ void lv_rletter(const lv_point_t * pos_p, const lv_area_t * mask_p,
         for(col = col_start; col < col_end; col ++) {
             letter_px = (*map_p & mask) >> (8 - col_bit - bpp);
             if(letter_px != 0) {
-#if LV_ENABLE_CHARACTER_BUFFER == 0
+#if LV_ENABLE_PIXEL_BUFFER == 0
                 lv_rpx(pos_p->x + col, pos_p->y + row, mask_p, lv_color_mix(color, letter_bg_color, bpp == 8 ? letter_px : bpp_opa_table[letter_px]), LV_OPA_COVER);
                 zeroRow[row] = 0;
                 isWhitespace = false;
@@ -247,7 +247,7 @@ void lv_rletter(const lv_point_t * pos_p, const lv_area_t * mask_p,
         }
     }
 
-#if LV_ENABLE_CHARACTER_BUFFER != 0
+#if LV_ENABLE_PIXEL_BUFFER != 0
     /* Draw the character image on the screen */
     lv_disp_map(pos_p->y + trimTop, pos_p->x, pos_p->y + trimTop + (letter_h - trimTop - trimBottom), pos_p->x + letter_w,pixel_buffer);
 #endif
