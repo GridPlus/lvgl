@@ -29,7 +29,10 @@
  *  STATIC VARIABLES
  **********************/
 static lv_color_t letter_bg_color;
-
+#if LV_ENABLE_PIXEL_BUFFER != 0
+    static lv_color_t pixel_buffer[LV_CHARACTER_MAX_PIX_HEIGHT * LV_CHARACTER_MAX_PIX_WIDTH];
+    static const uint32_t PIXEL_BUFFER_SIZE = sizeof(pixel_buffer) / sizeof(pixel_buffer[0]);
+#endif
 /**********************
  *      MACROS
  **********************/
@@ -120,8 +123,7 @@ void lv_rletter(const lv_point_t * pos_p, const lv_area_t * mask_p,
     uint8_t mask_init;
     uint8_t mask;
 
-#if LV_ENABLE_CHARACTER_BUFFER != 0
-    lv_color_t letter_img[LV_CHARACTER_MAX_PIX_HEIGHT * LV_CHARACTER_MAX_PIX_WIDTH];
+#if LV_ENABLE_PIXEL_BUFFER != 0
 
     // Make sure letter dimensions don't exceed the size of our character buffer
     letter_h = (letter_h > LV_CHARACTER_MAX_PIX_HEIGHT) ? LV_CHARACTER_MAX_PIX_HEIGHT : letter_h;
@@ -189,17 +191,17 @@ void lv_rletter(const lv_point_t * pos_p, const lv_area_t * mask_p,
         for(col = col_start; col < col_end; col ++) {
             letter_px = (*map_p & mask) >> (8 - col_bit - bpp);
             if(letter_px != 0) {
-#if LV_ENABLE_CHARACTER_BUFFER == 0
+#if LV_ENABLE_PIXEL_BUFFER == 0
                 lv_rpx(pos_p->x + col, pos_p->y + row, mask_p, lv_color_mix(color, letter_bg_color, bpp == 8 ? letter_px : bpp_opa_table[letter_px]), LV_OPA_COVER);
                 zeroRow[row] = 0;
                 isWhitespace = false;
             }
 #else
-                letter_img[(col-col_start)*letter_h + (row-row_start)] = lv_color_mix(color, letter_bg_color, bpp == 8 ? letter_px : bpp_opa_table[letter_px]);
+                pixel_buffer[(col-col_start)*letter_h + (row-row_start)] = lv_color_mix(color, letter_bg_color, bpp == 8 ? letter_px : bpp_opa_table[letter_px]);
                 zeroRow[row] = 0;
                 isWhitespace = false;
             } else {
-                letter_img[(col-col_start)*letter_h + (row-row_start)] = letter_bg_color;
+                pixel_buffer[(col-col_start)*letter_h + (row-row_start)] = letter_bg_color;
             }
 #endif
             if(col_bit < 8 - bpp) {
@@ -241,14 +243,14 @@ void lv_rletter(const lv_point_t * pos_p, const lv_area_t * mask_p,
     uint16_t k = 0;
     for(col = col_start; col < col_end; col ++) {
         for(row = (row_start+trimTop); row < row_end - trimBottom; row ++) {
-            letter_img[k] = letter_img[(col-col_start)*letter_h +row];
+            pixel_buffer[k] = pixel_buffer[(col-col_start)*letter_h +row];
             k++;
         }
     }
 
-#if LV_ENABLE_CHARACTER_BUFFER != 0
+#if LV_ENABLE_PIXEL_BUFFER != 0
     /* Draw the character image on the screen */
-    lv_disp_map(pos_p->y + trimTop, pos_p->x, pos_p->y + trimTop + (letter_h - trimTop - trimBottom), pos_p->x + letter_w,letter_img);
+    lv_disp_map(pos_p->y + trimTop, pos_p->x, pos_p->y + trimTop + (letter_h - trimTop - trimBottom), pos_p->x + letter_w,pixel_buffer);
 #endif
 }
 
@@ -300,23 +302,17 @@ void lv_rmap(const lv_area_t * cords_p, const lv_area_t * mask_p,
             map_p += map_width * sizeof(lv_color_t);               /*Next row on the map*/
         }
     } else {
-        lv_color_t chroma_key_color = LV_COLOR_TRANSP;
         lv_coord_t col;
+        bzero(pixel_buffer, sizeof(pixel_buffer));
         for(row = masked_a.y1; row <= masked_a.y2; row++) {
             for(col = masked_a.x1; col <= masked_a.x2; col++) {
-                lv_color_t * px_color = (lv_color_t *) &map_p[(uint32_t)(col - masked_a.x1) * sizeof(lv_color_t)];
-
-                if(chroma_key && chroma_key_color.full == px_color->full) continue;
-
+                lv_color_t recolored_px = ((lv_color_t *) map_p)[(uint32_t)(col - masked_a.x1)];
                 if(recolor_opa != LV_OPA_TRANSP) {
-                    lv_color_t recolored_px = lv_color_mix(recolor, *px_color, recolor_opa);
-
-                    lv_rpx(col, row, mask_p, recolored_px, LV_OPA_COVER);
-                } else {
-                    lv_rpx(col, row, mask_p, *px_color, LV_OPA_COVER);
+                    recolored_px = lv_color_mix(recolor, recolored_px, recolor_opa);
                 }
-
+                pixel_buffer[(col - masked_a.x1) % PIXEL_BUFFER_SIZE] = recolored_px;
             }
+            lv_disp_map(row, masked_a.x1, row+1, masked_a.x2, pixel_buffer);
             map_p += map_width * sizeof(lv_color_t);               /*Next row on the map*/
         }
     }
