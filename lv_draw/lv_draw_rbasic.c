@@ -31,6 +31,7 @@
 static lv_color_t letter_bg_color;
 #if LV_ENABLE_PIXEL_BUFFER != 0
     static lv_color_t pixel_buffer[LV_CHARACTER_MAX_PIX_HEIGHT * LV_CHARACTER_MAX_PIX_WIDTH];
+    static uint32_t pixel_buffer_size = LV_CHARACTER_MAX_PIX_HEIGHT * LV_CHARACTER_MAX_PIX_WIDTH;
 #endif
 /**********************
  *      MACROS
@@ -306,13 +307,18 @@ void lv_rmap(const lv_area_t * cords_p, const lv_area_t * mask_p,
         bzero(pixel_buffer, sizeof(pixel_buffer));
         for(row = masked_a.y1; row <= masked_a.y2; row++) {
             for(col = masked_a.x1; col <= masked_a.x2; col++) {
+                uint32_t overflow_offset = 0;
                 lv_color_t * px_color = (lv_color_t *) &map_p[(uint32_t)(col - masked_a.x1) * sizeof(lv_color_t)];
                 if(chroma_key && chroma_key_color.full == px_color->full) continue;
+                if((col - masked_a.x1 - overflow_offset) > pixel_buffer_size) {
+                    // here we are going to account for overflow_offset
+                    // and call lv_disp_map() and then continue;
+                }
                 if(recolor_opa != LV_OPA_TRANSP) {
                     lv_color_t recolored_px = lv_color_mix(recolor, *px_color, recolor_opa);
-                    pixel_buffer[col - masked_a.x1] = recolored_px;
+                    pixel_buffer[col - masked_a.x1 - overflow_offset] = recolored_px;
                 } else {
-                    pixel_buffer[col - masked_a.x1] = *px_color;
+                    pixel_buffer[col - masked_a.x1 - overflow_offset] = *px_color;
                 }
             }
             lv_disp_map(row, masked_a.x1, row+1, masked_a.x2, pixel_buffer);
