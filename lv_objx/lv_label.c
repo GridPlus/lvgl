@@ -146,6 +146,29 @@ lv_obj_t * lv_label_create(lv_obj_t * par, const lv_obj_t * copy)
  */
 void lv_label_set_text(lv_obj_t * label, const char * text)
 {
+    // scan for strange characters that are not mapped to gridplus custom values
+    size_t textBufSz = strlen(text);
+    char processedText[textBufSz];
+    size_t j = 0; // lagging index
+    for(size_t i = 0; i < textBufSz; i++) {
+        if (text[i] < 0x7f) {
+            processedText[j] = text[i];
+        } else if ((textBufSz - i) >= 2) {
+            if (text[i] == 0xef && (text[i + 1] == 0xa0 || text[i + 1] == 0xa4)) {
+                processedText[j] = text[i];
+                i++; j++;
+                processedText[j] = text[i];
+                i++; j++;
+                processedText[j] = text[i];
+            }
+            else {
+                processedText[j] = 0x7f;
+                i += 2;
+            }
+        }
+        j++;
+    }
+    text = processedText;
     lv_obj_invalidate(label);
 
     lv_label_ext_t * ext = lv_obj_get_ext_attr(label);
