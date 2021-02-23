@@ -146,6 +146,41 @@ lv_obj_t * lv_label_create(lv_obj_t * par, const lv_obj_t * copy)
  */
 void lv_label_set_text(lv_obj_t * label, const char * text)
 {
+    // GridPlus Symbols (found in gp_symbols.h in the firmware repo) are 3 bytes 
+    // which all have first byte = 0xef and second byte = 0xa4. 
+    // We make exceptions for these symbols and otherwise display a special square character (0x7f) 
+    // if the character is outside of ASCII bound. 
+    // If this step is not taken, lvgl will print nothing, even though a value is included in the string, 
+    // which may be hashed and signed. 
+    // We must always display all information that is being signed on the screen. 
+    // Note that if GP symbols location were to change in the future, this rule may need to be amended.
+    //
+    // For more information, please refer to the following references:
+    // https://gridplusteam.slack.com/archives/GA6H5KR9U/p1614013623031400
+    // https://github.com/GridPlus/k8x_firmware_production/pull/1887
+
+    size_t textBufSz = strlen(text);
+    char processedText[textBufSz];
+    size_t j = 0; // lagging index
+    for(size_t i = 0; i < textBufSz; i++) {
+        if (text[i] < 0x7f) {
+            processedText[j] = text[i];
+        } else if ((textBufSz - i) >= 2) {
+            if (text[i] == 0xef && (text[i + 1] == 0xa0 || text[i + 1] == 0xa4)) {
+                processedText[j] = text[i];
+                i++; j++;
+                processedText[j] = text[i];
+                i++; j++;
+                processedText[j] = text[i];
+            }
+            else {
+                processedText[j] = 0x7f;
+                i += 2;
+            }
+        }
+        j++;
+    }
+    text = processedText;
     lv_obj_invalidate(label);
 
     lv_label_ext_t * ext = lv_obj_get_ext_attr(label);
