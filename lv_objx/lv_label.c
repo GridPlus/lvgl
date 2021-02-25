@@ -6,6 +6,9 @@
 /*********************
  *      INCLUDES
  *********************/
+#define DEBUG_LEVEL 3
+#include "gp_debug_console.h"
+
 #include "lv_label.h"
 #if USE_LV_LABEL != 0
 
@@ -158,31 +161,33 @@ void lv_label_set_text(lv_obj_t * label, const char * text)
     // For more information, please refer to the following references:
     // https://gridplusteam.slack.com/archives/GA6H5KR9U/p1614013623031400
     // https://github.com/GridPlus/k8x_firmware_production/pull/1887
-
     size_t textBufSz = strlen(text);
-    char processedText[textBufSz];
-    size_t j = 0; // lagging index
-    for(size_t i = 0; i < textBufSz; i++) {
-        if (text[i] < 0x7f) {
-            processedText[j] = text[i];
-        } else if ((textBufSz - i) >= 2) {
-            if (text[i] == 0xef && (text[i + 1] == 0xa0 || text[i + 1] == 0xa4)) {
+    #define MAX_PARSEABLE_STRING_SIZE 400
+    if(textBufSz < MAX_PARSEABLE_STRING_SIZE) { // skip processing really large strings
+        char processedText[MAX_PARSEABLE_STRING_SIZE];
+        memset(processedText, 0, sizeof(processedText));
+        size_t j = 0; // lagging index
+        for(size_t i = 0; i < textBufSz; i++) {
+            if (text[i] < 0x7f) {
                 processedText[j] = text[i];
-                i++; j++;
-                processedText[j] = text[i];
-                i++; j++;
-                processedText[j] = text[i];
+            } else if ((textBufSz - i) >= 2) {
+                if (text[i] == 0xef && (text[i + 1] == 0xa0 || text[i + 1] == 0xa4)) {
+                    processedText[j] = text[i];
+                    i++; j++;
+                    processedText[j] = text[i];
+                    i++; j++;
+                    processedText[j] = text[i];
+                }
+                else {
+                    processedText[j] = 0x7f;
+                    i += 2;
+                }
             }
-            else {
-                processedText[j] = 0x7f;
-                i += 2;
-            }
+            j++;
         }
-        j++;
+        text = processedText;
     }
-    text = processedText;
     lv_obj_invalidate(label);
-
     lv_label_ext_t * ext = lv_obj_get_ext_attr(label);
 
     /*If text is NULL then refresh */
